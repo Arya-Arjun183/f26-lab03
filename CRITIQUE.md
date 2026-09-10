@@ -53,19 +53,16 @@ list of local code fixes. Read the handout's appendix before writing this sectio
 
 ### Alternative A
 
-**The decomposition.** What are the pieces, what does each own, and where do the rules
-live?
+**The decomposition.** Introduce a `Booking` domain object and a `TimeParser` utility. The `Booking` object encapsulates the start time, end time, user, and room, and owns the logic to check if it overlaps with another `Booking`. `InMemoryStore` manages collections of `Booking` objects instead of raw `long[]` primitives. `RequestHandler` delegates time string parsing to the `TimeParser` and interacts with the store exclusively using `Booking` objects.
 
-**One tradeoff.** Something this option actually costs. "No real downside" is not a
-tradeoff.
+**One tradeoff.** Creating a formal domain model means more classes and objects are instantiated on every request, which slightly increases memory overhead compared to primitive arrays. It also requires an upfront, sweeping refactoring of both `InMemoryStore` and `RequestHandler` to swap out the primitives, causing high churn on code that currently works.
 
 ### Alternative B
 
-**The decomposition.**
+**The decomposition.** Split `RequestHandler` into a `StringController` and a `BookingService`. The `StringController` owns only the parsing of string inputs and formatting of string outputs/errors. The `BookingService` owns the core business rules (like enforcing the no-double-booking invariant) and coordinates between the controller and the `InMemoryStore`. The rules live in the service layer, keeping the controller dumb and the store focused purely on data storage.
 
-**One tradeoff.**
+**One tradeoff.** Introducing a middle service layer adds indirection. A simple request now has to travel through three layers (Controller -> Service -> Store) instead of two. This means a developer has to trace through more files to understand the end-to-end flow of a basic request, even if the individual files are more focused.
 
 ### Preference
 
-Which one, and under what conditions? Say what the choice depends on, and what would
-make you pick the other one instead.
+I prefer Alternative A if we anticipate adding more properties to a booking (like attendees, meeting titles, or recurrence rules) or more complex time logic (like timezones). Primitive arrays simply cannot scale to handle those additions. However, I would pick Alternative B instead if the data shape (`startMinutes`, `endMinutes`) is guaranteed to be fixed forever, but the business rules for *when* you can book (e.g., enforcing maximum booking lengths or user quotas) are expected to grow rapidly. In that case, a dedicated service layer for business rules is more valuable than a rich domain model.
