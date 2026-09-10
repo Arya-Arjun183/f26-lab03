@@ -30,21 +30,19 @@ Two problems. For each one, fill in all three parts.
 
 ### Problem 1
 
-**The problem.** Name it, using the vocabulary from lecture (milestone 2 in the
-handout names the three).
+**The problem.** Code Duplication. The logic used to parse time strings into `long` minutes and validate the `"HH:MM"` format is copy-pasted almost identically across multiple methods.
 
-**Where in the code.** File and method.
+**Where in the code.** In `RequestHandler.java`. The parsing block appears in `createBooking`, `cancelBooking`, and `rescheduleBooking`.
 
-**What it makes expensive.** A concrete future change, or something that already goes
-wrong today. What breaks first?
+**What it makes expensive.** Any future change to the time format (e.g. supporting 12-hour AM/PM times or adding seconds) would require updating this logic in three different places. Forgetting to update one would introduce bugs.
 
 ### Problem 2
 
-**The problem.**
+**The problem.** Primitive Obsession. The system represents complex domain concepts (like a Booking) using primitive data types (like `long[]` arrays or concatenated Strings like `"roomId|date"`) rather than creating dedicated classes.
 
-**Where in the code.**
+**Where in the code.** Primarily in `InMemoryStore.java` (using `Map<String, List<long[]>>` and `Map<String, String>`), but also in `RequestHandler.java` when it works with these primitives instead of domain objects.
 
-**What it makes expensive.**
+**What it makes expensive.** Extending the data model. If a future change requires adding "number of attendees" or a "meeting title" to a booking, it becomes very expensive and error-prone because there is no `Booking` object to easily add fields to. You would either have to add and maintain a third `Map`, or change the `long[]` structure everywhere.
 
 ---
 
